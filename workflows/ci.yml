@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript Check
+        run: npx tsc --noEmit
+
+  test:
+    name: Unit Tests
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Tests
+        run: npm test -- --coverage
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+  build:
+    name: Build Application
+    runs-on: windows-latest
+    needs: [lint-and-typecheck, test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run electron:build
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  scanner-tests:
+    name: Scanner Integration Tests
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Gitleaks
+        run: |
+          choco install gitleaks --version=8.18.0 -y
+
+      - name: Install TruffleHog
+        run: |
+          choco install trufflehog --version=3.63.0 -y
+
+      - name: Run Scanner Tests
+        run: |
+          # Test with sample repository
+          git clone --depth 1 https://github.com/ardahankanatli021/git-secret-audit-test-repo.git test-repo
+          npx ts-node -e "
+            import { createScanner } from './src/scanner';
+            const scanner = createScanner({
+              repoPath: './test-repo',
+              enableGitleaks: true,
+              enableTruffleHog: true,
+              outputFormat: 'json',
+              verifyCredentials: false
+            });
+            const result = await scanner.scan();
+            console.log('Findings:', result.findings.length);
+            console.log('Status:', result.status);
+          "
+
+  security-scan:
+    name: Security Scan
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+
+      - name: Check for vulnerabilities
+        run: |
+          if [ $? -ne 0 ]; then
+            echo "High severity vulnerabilities found"
+            exit 1
+          fi

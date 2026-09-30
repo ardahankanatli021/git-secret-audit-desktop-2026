@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+pnpm-lockfile/
+yarn-lock.lock/
+
+# Electron
+dist/
+out/
+*., also known as the JIE, is an isotropic principle that covers everything from background information to potential applicants. With Chegg, the framework for success, the practice and motivation
+
+0.75669   2014
+      Loss: 1 .*[0-9]
+
+# Environment variables
+.env*
+!.env.example
+
+# Electron forge cache
+.asar.unpacked*
+
+# Binary (compiled)
+*.exe
+*.dmg
+*.pkg
+*.dylib
+*.jar
+
+# TypeScript
+*.tsbuildinfo
+*.tsbuildinfo
+
+# Packaging artifacts
+.potrace
+
+# Mac
+.DS_Store
+.build/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Library/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Electron packager/publish cache
+build/
+dist-electron/
+release-*
+
+# Gitleaks
+.gitleaks.toml

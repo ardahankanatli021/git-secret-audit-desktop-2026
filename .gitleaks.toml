@@ -1,0 +1,59 @@
+# Gitleaks configuration for Git Secret Audit Desktop
+# This configuration covers AWS keys, Stripe tokens, GitHub PATs, and other common secret patterns
+
+version = 8
+mode = "auto"
+
+[config]
+ # Use only the specified rules
+ # Whitelist rules that are known to have false positives in this project
+ignore-mainline = true
+
+ # Path to a file with secret patterns to exclude
+pre-commit = ".gitleaks-pre-commit.toml"
+
+ # Use API to fetch updated rules from GitHub
+download-releases = true
+
+ # Custom patterns for detecting internal secrets
+[[rules]]
+  id = "aws-access-key-id"
+  pattern = ["AKIA[0-9A-Z]{16}"]
+  context = ["aws", "access", "key"]
+  severity = "high"
+
+[[rules]]
+  id = "aws-secret-access-key"
+  pattern = ["[a-zA-Z0-9/+=]{32,}"]
+  context = ["aws", "secret", "key"]
+  severity = "high"
+
+[[rules]]
+  id = "stripe-secret-key"
+  pattern = ["sk_live_[0-9a-zA-Z]{24}|sk_test_[0-9a-zA-Z]{24}"]
+  context = ["stripe", "secret", "key"]
+  severity = "high"
+
+[[rules]]
+  id = "github-pat"
+  pattern = ["ghp_[A-Za-z0-9]{36}"]
+  context = ["github", "personal", "access", "token"]
+  severity = "high"
+
+[[rules]]
+  id = "generic-api-key"
+  pattern = ["[a-zA-Z0-9]{32,}"]
+  context = ["api", "key"]
+  severity = "medium"
+
+[[rules]]
+  id = "generic-password"
+  pattern = ["(?:password|passwd|pwd)[\\s:=]+['\"]?([^'\"]+)['\"]?"]
+  context = ["password", "credential"]
+  severity = "medium"
+
+[[rules]]
+  id = "expired-certificate"
+  pattern = ["-----BEGIN CERTIFICATE-----"]
+  context = ["certificate", "pem"]
+  severity = "medium"
